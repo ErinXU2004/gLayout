@@ -196,7 +196,7 @@ netgen_lvs_result = {pdk}.lvs_netgen(
 - If the return code of the python script is non zero, the workflow is deemed to have failed and the GitHub actions reflects this
 - If multiple things need to be checked, the scripts can be broken down into multiple sequential jobs, all of which have to pass for a CI check to be successful 
 
-![General_CI_Flow](_images/general_CI_flow.png)
+![General_CI_Flow](_images/general_ci_flow.png)
 
 Below is the flow for how contributor-added components will be evaluated by the Github Actions Workflow. The following are absolute musts to take care of when contributing code (in decreasing order of importance): 
 
