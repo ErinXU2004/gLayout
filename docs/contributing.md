@@ -213,7 +213,7 @@ Below is the flow for how contributor-added components will be evaluated by the 
 2. Look at existing pcell examples to see how to code in an optimal manner
 3. Include descriptive docstrings in the functions to describe what the cell is supposed to do. Using the [vscode extension](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring) is helpful for templating the docstring
 <p align="center">
-<img src="./_images/action_workflow.png" width="300" height="500">
+<img src="./_images/action_workflow.png" width="600" height="1000">
 </p>
 
 ## Best Practices for Contributing Components
