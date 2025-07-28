@@ -119,9 +119,9 @@ A port describes a single edge of a polygon. The most useful port attributes are
 The currently implemented parametric cells, and planned cells can be found in this [sheet](https://docs.google.com/spreadsheets/d/1KGBN63gHc-hpxVrqoAoOkerA7bl1-sZ44X4uEn-ILGE/edit?gid=0#gid=0).
 Contributors are encouraged to implement unimplemented Pcells. Refer to docstrings for implemented ones.
 
-## Creating Components 🚧 (Under Revision)
+## Creating Components
 
-We are currently revising how blocks and circuit generators are structured.
+1. Make a fork of the repo and install tools
 
 
 ## DRC and LVS Checks
@@ -213,7 +213,7 @@ Below is the flow for how contributor-added components will be evaluated by the 
 2. Look at existing pcell examples to see how to code in an optimal manner
 3. Include descriptive docstrings in the functions to describe what the cell is supposed to do. Using the [vscode extension](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring) is helpful for templating the docstring
 <p align="center">
-<img src="./_images/action_workflow.png" width="400" height="750">
+<img src="./_images/action_workflow.png" width="500" height="850">
 </p>
 
 ## Best Practices for Contributing Components
