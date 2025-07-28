@@ -22,7 +22,7 @@ VS Code is recommended because it makes working with Jupyter notebooks and termi
   cd Chipathon25
   ```
 - Navigate to [Chipathon 2025 github page](https://github.com/sscs-ose/sscs-ose-chipathon.github.io) and find Code -> Copy button
-  <img src="./_images/Chipathon_2025_Github.png" width="1500" height="300">
+  <img src="./_images/Chipathon_2025_Github.png" width="1500" height="400">
   </p>
 - Paste the copied URL after the command “git clone”. It will download the files and also help in push your request once you are ready to contribute.
   <p align="center">
@@ -213,7 +213,7 @@ Below is the flow for how contributor-added components will be evaluated by the 
 2. Look at existing pcell examples to see how to code in an optimal manner
 3. Include descriptive docstrings in the functions to describe what the cell is supposed to do. Using the [vscode extension](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring) is helpful for templating the docstring
 <p align="center">
-<img src="./_images/action_workflow.png" width="600" height="1000">
+<img src="./_images/action_workflow.png" width="400" height="750">
 </p>
 
 ## Best Practices for Contributing Components
