@@ -3,4 +3,5 @@
 # Except this file
 !.gitignore
 !contributer_guide.md
-!images/*.png
+!_images/
+!_images/*.png
