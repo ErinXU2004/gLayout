@@ -11,10 +11,11 @@ VS Code is recommended because it makes working with Jupyter notebooks and termi
 ## Setting Up Git 💼
 - Check if Git is installed 
   - Use the following command in your terminal and you should see a path where git is installed
+    ```shell
+    which git
+    ```
   - If not, please install Git from a simple google search
-  ```shell
-  which git
-  ```
+
 - Use “mkdir” to make a new directory, name it “Chipathon25” (or any name of your choice).
 - Use “cd”  and move to the “Chipathon25” directory.
   ```shell
@@ -255,4 +256,4 @@ Every component should have a `README.md` file with:
 
 1. It is useful to include simulation testbenches where circuit performance can be tested with the latest tool versions. 
 2. This ensures the validity of design parameters after rigorous DRC and LVS checking 
-3. Add a **spice simulation testbench* for your designs and optionally a golden set of parameters to test the circuit against
+3. Add a *spice simulation testbench* for your designs and optionally a golden set of parameters to test the circuit against
