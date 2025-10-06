@@ -7,6 +7,12 @@ echo "=== Docker DRC Test for polyres.py ==="
 cd /workspace
 export PYTHONPATH="/workspace/src:$PYTHONPATH"
 
+# Check if we're in the right directory
+echo "Current directory: $(pwd)"
+echo "Python path: $PYTHONPATH"
+echo "Checking for polyres.py..."
+ls -la src/glayout/primitives/polyres.py
+
 echo "1. Testing imports..."
 python3 -c "
 import sys

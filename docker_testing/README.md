@@ -26,6 +26,7 @@ export PYTHONPATH="/workspace/src:$PYTHONPATH"
 
 ### 3. Test polyres.py Import
 ```bash
+# Method 1: Direct test
 python3 -c "
 import sys
 sys.path.insert(0, '/workspace/src')
@@ -33,6 +34,9 @@ from glayout.primitives.polyres import poly_resistor, add_polyres_labels
 from glayout.pdk.gf180_mapped import gf180_mapped_pdk
 print('✓ Import successful')
 "
+
+# Method 2: Use simple test script
+python3 /workspace/docker_testing/simple_test.py
 ```
 
 ### 4. Generate GDS File
