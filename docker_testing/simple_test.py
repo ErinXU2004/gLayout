@@ -7,24 +7,56 @@ import sys
 import os
 
 # Add the source directory to Python path
-sys.path.insert(0, '/workspace/src')
+# Try multiple possible paths
+possible_paths = [
+    '/workspace/src',
+    '/foss/designs/glayout/src',
+    '/foss/designs/src',
+    './src',
+    '../src'
+]
+
+for path in possible_paths:
+    if os.path.exists(path):
+        sys.path.insert(0, path)
+        print(f"✓ Added to Python path: {path}")
+        break
 
 print("=== Simple polyres.py Test ===")
 print(f"Current directory: {os.getcwd()}")
 print(f"Python path: {sys.path}")
 
-# Check if polyres.py exists
-polyres_path = '/workspace/src/glayout/primitives/polyres.py'
-if os.path.exists(polyres_path):
-    print(f"✓ Found polyres.py: {polyres_path}")
-else:
-    print(f"✗ polyres.py not found: {polyres_path}")
-    print("Available files in /workspace/src/glayout/primitives/:")
-    try:
-        for f in os.listdir('/workspace/src/glayout/primitives/'):
-            print(f"  - {f}")
-    except:
-        print("  Directory not found")
+# Check if polyres.py exists in multiple locations
+possible_polyres_paths = [
+    '/workspace/src/glayout/primitives/polyres.py',
+    '/foss/designs/glayout/src/glayout/primitives/polyres.py',
+    '/foss/designs/src/glayout/primitives/polyres.py',
+    './src/glayout/primitives/polyres.py',
+    '../src/glayout/primitives/polyres.py'
+]
+
+polyres_path = None
+for path in possible_polyres_paths:
+    if os.path.exists(path):
+        polyres_path = path
+        print(f"✓ Found polyres.py: {path}")
+        break
+
+if not polyres_path:
+    print("✗ polyres.py not found in any expected location")
+    print("Searching for glayout directories...")
+    for base_path in ['/workspace', '/foss/designs/glayout', '/foss/designs', '.', '..']:
+        glayout_path = os.path.join(base_path, 'src', 'glayout')
+        if os.path.exists(glayout_path):
+            print(f"  Found glayout at: {glayout_path}")
+            try:
+                primitives_path = os.path.join(glayout_path, 'primitives')
+                if os.path.exists(primitives_path):
+                    print(f"    Primitives directory: {primitives_path}")
+                    for f in os.listdir(primitives_path):
+                        print(f"      - {f}")
+            except:
+                pass
 
 # Test import
 print("\n1. Testing imports...")
