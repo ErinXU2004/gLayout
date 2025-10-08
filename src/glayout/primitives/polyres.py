@@ -272,15 +272,25 @@ def poly_resistor(
     try:
         if n_type:
             plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
+            # Check if rules exist between n+s/d and poly
             try:
-                plus_enclosure = pdk.get_grule("n+s/d", "poly")["min_enclosure"]
-            except KeyError:
+                n_poly_rules = pdk.get_grule("n+s/d", "poly")
+                if n_poly_rules and "min_enclosure" in n_poly_rules:
+                    plus_enclosure = n_poly_rules["min_enclosure"]
+                else:
+                    plus_enclosure = 0.15  # Default enclosure when no rules defined
+            except (KeyError, NotImplementedError):
                 plus_enclosure = 0.15  # Default enclosure
         else:
             plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
+            # Check if rules exist between p+s/d and poly
             try:
-                plus_enclosure = pdk.get_grule("p+s/d", "poly")["min_enclosure"]
-            except KeyError:
+                p_poly_rules = pdk.get_grule("p+s/d", "poly")
+                if p_poly_rules and "min_enclosure" in p_poly_rules:
+                    plus_enclosure = p_poly_rules["min_enclosure"]
+                else:
+                    plus_enclosure = 0.15  # Default enclosure when no rules defined
+            except (KeyError, NotImplementedError):
                 plus_enclosure = 0.15  # Default enclosure
         
         # P+/N+ implant with proper enclosure
@@ -289,7 +299,7 @@ def poly_resistor(
         plus = rectangle(size=(plus_width, plus_length), layer=plus_layer, centered=True)
         plus_ref = prec_ref_center(plus)
         p_res.add(plus_ref)
-        print(f"✓ Added {'N+' if n_type else 'P+'}+ layer")
+        print(f"✓ Added {'N+' if n_type else 'P+'}+ layer with {plus_enclosure}μm enclosure")
     except (KeyError, ValueError):
         print(f"⚠ {'N+' if n_type else 'P+'}+ layer not available in this PDK, skipping")
     # add pwell
