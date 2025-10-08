@@ -71,15 +71,24 @@ def poly_resistor(
     p_res = Component()
     contact_length = 2.2
     # Use larger separation to meet PRES/LRES.4 rule (0.6μm spacing to unrelated poly)
-    min_poly_separation = pdk.get_grule("poly", "poly")["min_separation"]
+    try:
+        min_poly_separation = pdk.get_grule("poly", "poly")["min_spacing"]
+    except KeyError:
+        min_poly_separation = 0.15  # Default minimum spacing
     unrelated_poly_separation = 0.6  # PRES/LRES.4 rule
     separation = max(min_poly_separation, unrelated_poly_separation) + width
     #Extend poly for contacts with proper spacing from SAB (use grules for spacing)
-    sab_contact_spacing = pdk.get_grule("sab", "mcon")["min_separation"]
+    try:
+        sab_contact_spacing = pdk.get_grule("sab", "mcon")["min_spacing"]
+    except KeyError:
+        sab_contact_spacing = 0.15  # Default spacing
     ex_length = length + 2*contact_length + 2*sab_contact_spacing
     for i in range(0,fingers):
         #poly resistor rectangle - ensure minimum width
-        poly_width = max(width, pdk.get_grule("poly", "poly")["min_width"])
+        try:
+            poly_width = max(width, pdk.get_grule("poly", "poly")["min_width"])
+        except KeyError:
+            poly_width = max(width, 0.15)  # Default minimum width
         p_rect = rectangle(size=(poly_width,ex_length), layer=pdk.get_glayer("poly"), centered=True)
         p_rect_ref = prec_ref_center(p_rect)
         p_res.add(p_rect_ref)
@@ -125,7 +134,10 @@ def poly_resistor(
         # Use the same poly_width as the main resistor for consistency
         ext_width = poly_width
         # Ensure extension height also meets minimum width requirement
-        ext_height = max(2*poly_extension, pdk.get_grule("poly", "poly")["min_width"])
+        try:
+            ext_height = max(2*poly_extension, pdk.get_grule("poly", "poly")["min_width"])
+        except KeyError:
+            ext_height = max(2*poly_extension, 0.15)  # Default minimum width
         top_poly_ext = rectangle(size=(ext_width + 2*poly_extension, ext_height), layer=pdk.get_glayer("poly"), centered=True)
         top_poly_ext_ref = prec_ref_center(top_poly_ext)
         p_res.add(top_poly_ext_ref)
@@ -235,7 +247,10 @@ def poly_resistor(
     p_res.add_ports(tiering_ref.get_ports_list(), prefix="tie_")
     
     # Add SAB layer with proper enclosure (use grules for enclosure)
-    sab_enclosure = pdk.get_grule("sab", "poly")["min_enclosure"]
+    try:
+        sab_enclosure = pdk.get_grule("sab", "poly")["min_enclosure"]
+    except KeyError:
+        sab_enclosure = 0.15  # Default enclosure
     sab_width = width * fingers + 2 * sab_enclosure
     sab_length = length + 2 * sab_enclosure
     sab_rect = rectangle(size=(sab_width, sab_length), layer=pdk.get_glayer("sab"), centered=True)
@@ -243,7 +258,10 @@ def poly_resistor(
     p_res.add(sab_ref)
     
     # Add RES_MK layer with proper coverage (must cover poly resistor per PRES.9a/LRES.9a)
-    res_mk_enclosure = pdk.get_grule("res_mk", "poly")["min_enclosure"]
+    try:
+        res_mk_enclosure = pdk.get_grule("res_mk", "poly")["min_enclosure"]
+    except KeyError:
+        res_mk_enclosure = 0.15  # Default enclosure
     res_mk_width = width * fingers + 2 * res_mk_enclosure
     res_mk_length = length + 2 * res_mk_enclosure
     res_mk_rect = rectangle(size=(res_mk_width, res_mk_length), layer=pdk.get_glayer("res_mk"), centered=True)
@@ -253,10 +271,16 @@ def poly_resistor(
     # add pplus or nplus layer according to the polyresistor type
     if n_type:
         plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
-        plus_enclosure = pdk.get_grule("n+s/d", "poly")["min_enclosure"]
+        try:
+            plus_enclosure = pdk.get_grule("n+s/d", "poly")["min_enclosure"]
+        except KeyError:
+            plus_enclosure = 0.15  # Default enclosure
     else:
         plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
-        plus_enclosure = pdk.get_grule("p+s/d", "poly")["min_enclosure"]
+        try:
+            plus_enclosure = pdk.get_grule("p+s/d", "poly")["min_enclosure"]
+        except KeyError:
+            plus_enclosure = 0.15  # Default enclosure
     
     # P+/N+ implant with proper enclosure (use grules for enclosure)
     plus_width = width * fingers + 2 * plus_enclosure
