@@ -78,10 +78,8 @@ def poly_resistor(
     unrelated_poly_separation = 0.6  # PRES/LRES.4 rule
     separation = max(min_poly_separation, unrelated_poly_separation) + width
     #Extend poly for contacts with proper spacing from SAB (use grules for spacing)
-    try:
-        sab_contact_spacing = pdk.get_grule("sab", "mcon")["min_spacing"]
-    except KeyError:
-        sab_contact_spacing = 0.15  # Default spacing
+    # SAB layer might not be available in all PDKs, use default spacing
+    sab_contact_spacing = 0.15  # Default spacing for SAB to contact
     ex_length = length + 2*contact_length + 2*sab_contact_spacing
     for i in range(0,fingers):
         #poly resistor rectangle - ensure minimum width
@@ -246,48 +244,54 @@ def poly_resistor(
         )
     p_res.add_ports(tiering_ref.get_ports_list(), prefix="tie_")
     
-    # Add SAB layer with proper enclosure (use grules for enclosure)
+    # Add SAB layer with proper enclosure (if available in PDK)
     try:
         sab_enclosure = pdk.get_grule("sab", "poly")["min_enclosure"]
-    except KeyError:
-        sab_enclosure = 0.15  # Default enclosure
-    sab_width = width * fingers + 2 * sab_enclosure
-    sab_length = length + 2 * sab_enclosure
-    sab_rect = rectangle(size=(sab_width, sab_length), layer=pdk.get_glayer("sab"), centered=True)
-    sab_ref = prec_ref_center(sab_rect)
-    p_res.add(sab_ref)
+        sab_width = width * fingers + 2 * sab_enclosure
+        sab_length = length + 2 * sab_enclosure
+        sab_rect = rectangle(size=(sab_width, sab_length), layer=pdk.get_glayer("sab"), centered=True)
+        sab_ref = prec_ref_center(sab_rect)
+        p_res.add(sab_ref)
+        print("✓ Added SAB layer")
+    except (KeyError, ValueError):
+        print("⚠ SAB layer not available in this PDK, skipping")
     
-    # Add RES_MK layer with proper coverage (must cover poly resistor per PRES.9a/LRES.9a)
+    # Add RES_MK layer with proper coverage (if available in PDK)
     try:
         res_mk_enclosure = pdk.get_grule("res_mk", "poly")["min_enclosure"]
-    except KeyError:
-        res_mk_enclosure = 0.15  # Default enclosure
-    res_mk_width = width * fingers + 2 * res_mk_enclosure
-    res_mk_length = length + 2 * res_mk_enclosure
-    res_mk_rect = rectangle(size=(res_mk_width, res_mk_length), layer=pdk.get_glayer("res_mk"), centered=True)
-    res_mk_ref = prec_ref_center(res_mk_rect)
-    p_res.add(res_mk_ref)
+        res_mk_width = width * fingers + 2 * res_mk_enclosure
+        res_mk_length = length + 2 * res_mk_enclosure
+        res_mk_rect = rectangle(size=(res_mk_width, res_mk_length), layer=pdk.get_glayer("res_mk"), centered=True)
+        res_mk_ref = prec_ref_center(res_mk_rect)
+        p_res.add(res_mk_ref)
+        print("✓ Added RES_MK layer")
+    except (KeyError, ValueError):
+        print("⚠ RES_MK layer not available in this PDK, skipping")
 
-    # add pplus or nplus layer according to the polyresistor type
-    if n_type:
-        plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
-        try:
-            plus_enclosure = pdk.get_grule("n+s/d", "poly")["min_enclosure"]
-        except KeyError:
-            plus_enclosure = 0.15  # Default enclosure
-    else:
-        plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
-        try:
-            plus_enclosure = pdk.get_grule("p+s/d", "poly")["min_enclosure"]
-        except KeyError:
-            plus_enclosure = 0.15  # Default enclosure
-    
-    # P+/N+ implant with proper enclosure (use grules for enclosure)
-    plus_width = width * fingers + 2 * plus_enclosure
-    plus_length = length + 2 * plus_enclosure
-    plus = rectangle(size=(plus_width, plus_length), layer=plus_layer, centered=True)
-    plus_ref = prec_ref_center(plus)
-    p_res.add(plus_ref)
+    # add pplus or nplus layer according to the polyresistor type (if available in PDK)
+    try:
+        if n_type:
+            plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
+            try:
+                plus_enclosure = pdk.get_grule("n+s/d", "poly")["min_enclosure"]
+            except KeyError:
+                plus_enclosure = 0.15  # Default enclosure
+        else:
+            plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
+            try:
+                plus_enclosure = pdk.get_grule("p+s/d", "poly")["min_enclosure"]
+            except KeyError:
+                plus_enclosure = 0.15  # Default enclosure
+        
+        # P+/N+ implant with proper enclosure
+        plus_width = width * fingers + 2 * plus_enclosure
+        plus_length = length + 2 * plus_enclosure
+        plus = rectangle(size=(plus_width, plus_length), layer=plus_layer, centered=True)
+        plus_ref = prec_ref_center(plus)
+        p_res.add(plus_ref)
+        print(f"✓ Added {'N+' if n_type else 'P+'}+ layer")
+    except (KeyError, ValueError):
+        print(f"⚠ {'N+' if n_type else 'P+'}+ layer not available in this PDK, skipping")
     # add pwell
     #p_res.add_padding(
     #    layers=(pdk.get_glayer("pwell"),),
