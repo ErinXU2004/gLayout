@@ -29,10 +29,10 @@ def poly_resistor_netlist(
 
     #source_netlist += "\n.ends"
 
-    source_netlist="""\n.subckt {circuit_name} {nodes} """+f'l={ltop} w={wtop} m={mtop}'+"""
-XMAIN PLUS MINUS VSUBS {model} r_width={{w}} r_length={{l}} m={{m}}"""
-
-    source_netlist += "\n.ends {circuit_name}"
+    # Create proper SPICE subcircuit definition
+    source_netlist = f""".subckt {circuit_name} PLUS MINUS VSUBS
+XMAIN PLUS MINUS VSUBS {model} r_width={wtop} r_length={ltop} m={mtop}
+.ends {circuit_name}"""
 
 
 
@@ -40,7 +40,7 @@ XMAIN PLUS MINUS VSUBS {model} r_width={{w}} r_length={{l}} m={{m}}"""
         circuit_name=circuit_name,
         nodes=['PLUS', 'MINUS', 'VSUBS'],
         source_netlist=source_netlist,
-        instance_format="X{name} {nodes} {circuit_name} l={length} w={width} m={multipliers}}",
+        instance_format="X{name} {nodes} {circuit_name}",
         parameters={
             'model': model,
             'length': ltop,
@@ -52,178 +52,108 @@ XMAIN PLUS MINUS VSUBS {model} r_width={{w}} r_length={{l}} m={{m}}"""
 def poly_resistor(
     pdk: MappedPDK,
     length: float = 1.65,
-    width: float = 0.8,  # Minimum width per DRC rule PRES.1/LRES.1 (will be validated against grules)
+    width: float = 0.35,
     fingers: int = 1,
     tie_layers: tuple[str,str] = ("met2","met2"),
     is_snake: bool = True,
     n_type: bool = False,
     silicided: bool = False
 ) -> Component:
-    # Validate width against minimum requirements
-    min_width = pdk.get_grule("poly", "poly")["min_width"]
-    if width < min_width:
-        print(f"Warning: Poly resistor width {width} is less than minimum {min_width}, adjusting to minimum width")
-        width = min_width
-    
     #poly_res = (66, 13)
     sab = (49,0)
     res_mk = (110,5)
     p_res = Component()
     contact_length = 2.2
-    # Use larger separation to meet PRES/LRES.4 rule (0.6μm spacing to unrelated poly)
-    try:
-        min_poly_separation = pdk.get_grule("poly", "poly")["min_spacing"]
-    except KeyError:
-        min_poly_separation = 0.15  # Default minimum spacing
-    unrelated_poly_separation = 0.6  # PRES/LRES.4 rule
-    separation = max(min_poly_separation, unrelated_poly_separation) + width
-    #Extend poly for contacts with proper spacing from SAB (use grules for spacing)
-    # SAB layer might not be available in all PDKs, use default spacing
-    sab_contact_spacing = 0.15  # Default spacing for SAB to contact
-    ex_length = length + 2*contact_length + 2*sab_contact_spacing
+    separation = 0.21 + width
+    #Extend poly for contacts
+    ex_length = length + 2*contact_length
     for i in range(0,fingers):
-        #poly resistor rectangle - ensure minimum width
-        try:
-            poly_width = max(width, pdk.get_grule("poly", "poly")["min_width"])
-        except KeyError:
-            poly_width = max(width, 0.15)  # Default minimum width
-        p_rect = rectangle(size=(poly_width,ex_length), layer=pdk.get_glayer("poly"), centered=True)
+        #poly resistor rectangle
+        p_rect = rectangle(size=(width,ex_length), layer=pdk.get_glayer("poly"), centered=True)
         p_rect_ref = prec_ref_center(p_rect)
         p_res.add(p_rect_ref)
         movex(p_rect_ref, (i)*separation)
-        #Add li layer on top and bottom contacts (positioned outside SAB area)
-        # Use poly_width to ensure consistency
-        li_top = rectangle(size=(poly_width,contact_length), layer=pdk.get_glayer("met1"), centered=True)
+        #Add li layer on top and bottom contacts
+        li_top = rectangle(size=(width,contact_length), layer=pdk.get_glayer("met1"), centered=True)
         li_top_ref = prec_ref_center(li_top)
         p_res.add(li_top_ref)
-        movey(li_top_ref, contact_length/2 + length/2 + sab_contact_spacing)
+        movey(li_top_ref, contact_length/2 + length/2)
         movex(li_top_ref, (i)*separation)
 
-        li_bot = rectangle(size=(poly_width,contact_length), layer=pdk.get_glayer("met1"), centered=True)
+        li_bot = rectangle(size=(width,contact_length), layer=pdk.get_glayer("met1"), centered=True)
         li_bot_ref = prec_ref_center(li_bot)
         p_res.add(li_bot_ref)
-        movey(li_bot_ref, - contact_length/2 - length/2 - sab_contact_spacing)
+        movey(li_bot_ref, - contact_length/2 - length/2)
         movex(li_bot_ref, (i)*separation)
 
-        # SAB and RES_MK layers will be added after the loop for proper coverage
+        ##Add unsalicide layer, if not silicided, use this block, otherwise skip
+        unsal = rectangle(size=((width*fingers+0.56),(length)), layer=sab, centered=True)
+        unsal_ref = prec_ref_center(unsal)
+        p_res.add(unsal_ref)
 
-        #Place poly to met1 contacts with proper overlap (CO.3 rule: 0.07μm poly overlap)
-        # Create contacts directly to ensure proper overlap
-        contact_size = 0.22  # Standard contact size
-        poly_overlap = 0.07  # CO.3 rule requirement
-        
-        # Top contact
-        top_contact = rectangle(size=(contact_size, contact_size), layer=pdk.get_glayer("mcon"), centered=True)
-        top_contact_ref = prec_ref_center(top_contact)
-        p_res.add(top_contact_ref)
-        movey(top_contact_ref, contact_length/2 + length/2 + sab_contact_spacing)
-        movex(top_contact_ref, (i)*separation)
-        
-        # Bottom contact
-        bot_contact = rectangle(size=(contact_size, contact_size), layer=pdk.get_glayer("mcon"), centered=True)
-        bot_contact_ref = prec_ref_center(bot_contact)
-        p_res.add(bot_contact_ref)
-        movey(bot_contact_ref, - contact_length/2 - length/2 - sab_contact_spacing)
-        movex(bot_contact_ref, (i)*separation)
-        
-        # Extend poly to ensure proper overlap with contacts
-        # Ensure poly extension width meets minimum width requirement
-        poly_extension = poly_overlap + contact_size/2
-        # Use the same poly_width as the main resistor for consistency
-        ext_width = poly_width
-        # Ensure extension height also meets minimum width requirement
-        try:
-            ext_height = max(2*poly_extension, pdk.get_grule("poly", "poly")["min_width"])
-        except KeyError:
-            ext_height = max(2*poly_extension, 0.15)  # Default minimum width
-        top_poly_ext = rectangle(size=(ext_width + 2*poly_extension, ext_height), layer=pdk.get_glayer("poly"), centered=True)
-        top_poly_ext_ref = prec_ref_center(top_poly_ext)
-        p_res.add(top_poly_ext_ref)
-        movey(top_poly_ext_ref, contact_length/2 + length/2 + sab_contact_spacing)
-        movex(top_poly_ext_ref, (i)*separation)
-        
-        bot_poly_ext = rectangle(size=(ext_width + 2*poly_extension, ext_height), layer=pdk.get_glayer("poly"), centered=True)
-        bot_poly_ext_ref = prec_ref_center(bot_poly_ext)
-        p_res.add(bot_poly_ext_ref)
-        movey(bot_poly_ext_ref, - contact_length/2 - length/2 - sab_contact_spacing)
-        movex(bot_poly_ext_ref, (i)*separation)
+        ##Add RES_MK layer
+        resmk = rectangle(size=((width*fingers+0.56),(length)), layer=res_mk, centered=True)
+        resmk_ref = prec_ref_center(resmk)
+        p_res.add(resmk_ref)
 
-        # place metal 1 layer on contacts with proper overlap (CO.6 rule: 0.005μm metal overlap)
-        metal_overlap = 0.12  # CO.6 rule requirement
-        met1_size = contact_size + 2 * metal_overlap
-        
-        met1_top = rectangle(size=(met1_size, met1_size), layer=pdk.get_glayer("met1"), centered=True)
+        #Place poly to li via contact
+        licon1 = via_array(pdk, "poly", "met1", size=(width,contact_length))
+        licon1_ref = prec_ref_center(licon1)
+        #p_res.add(licon1_ref)
+        #movey(licon1_ref, contact_length/2 + length/2)
+
+        licon2 = via_array(pdk, "poly", "met1", size=(width,contact_length))
+        licon2_ref = prec_ref_center(licon2)
+        p_res.add(licon2_ref)
+        movey(licon2_ref, - contact_length/2 - length/2)
+        movex(licon2_ref, (i)*separation)
+
+        licon3 = via_array(pdk, "poly", "met1", size=(width,contact_length))
+        licon3_ref = prec_ref_center(licon3)
+        p_res.add(licon3_ref)
+        movey(licon3_ref, contact_length/2 + length/2)
+        movex(licon3_ref, (i)*separation)
+
+        # place metal 1 layer on contacts
+        met1_top = rectangle(size=(width,contact_length), layer=pdk.get_glayer("met2"), centered=True)
         met1_top_ref = prec_ref_center(met1_top)
         p_res.add(met1_top_ref)
-        movey(met1_top_ref, contact_length/2 + length/2 + sab_contact_spacing)
+        movey(met1_top_ref, contact_length/2 + length/2)
         movex(met1_top_ref, (i)*separation)
 
-        met1_bot = rectangle(size=(met1_size, met1_size), layer=pdk.get_glayer("met1"), centered=True)
+        met1_bot = rectangle(size=(width,contact_length), layer=pdk.get_glayer("met2"), centered=True)
         met1_bot_ref = prec_ref_center(met1_bot)
         p_res.add(met1_bot_ref)
-        movey(met1_bot_ref, - contact_length/2 - length/2 - sab_contact_spacing)
+        movey(met1_bot_ref, - contact_length/2 - length/2)
         movex(met1_bot_ref, (i)*separation)
-        #place met1 to met2 vias
-        via_size = 0.26  # Standard via size
-        via_overlap = 0.12  # Via enclosure requirement
-        
-        # Top via
-        top_via = rectangle(size=(via_size, via_size), layer=pdk.get_glayer("via1"), centered=True)
-        top_via_ref = prec_ref_center(top_via)
-        p_res.add(top_via_ref)
-        movey(top_via_ref, contact_length/2 + length/2 + sab_contact_spacing)
-        movex(top_via_ref, (i)*separation)
+        #place li to metal vias
+        met1con1 = via_array(pdk, "met1", "met2", size=(width,contact_length))
+        met1con1_ref = prec_ref_center(met1con1)
+        p_res.add(met1con1_ref)
+        movey(met1con1_ref, contact_length/2 + length/2)
+        movex(met1con1_ref, (i)*separation)
 
-        # Bottom via
-        bot_via = rectangle(size=(via_size, via_size), layer=pdk.get_glayer("via1"), centered=True)
-        bot_via_ref = prec_ref_center(bot_via)
-        p_res.add(bot_via_ref)
-        movey(bot_via_ref, - contact_length/2 - length/2 - sab_contact_spacing)
-        movex(bot_via_ref, (i)*separation)
-        
-        # Extend met1 to ensure proper overlap with vias
-        met1_via_ext = via_size + 2 * via_overlap
-        top_met1_ext = rectangle(size=(met1_via_ext, met1_via_ext), layer=pdk.get_glayer("met1"), centered=True)
-        top_met1_ext_ref = prec_ref_center(top_met1_ext)
-        p_res.add(top_met1_ext_ref)
-        movey(top_met1_ext_ref, contact_length/2 + length/2 + sab_contact_spacing)
-        movex(top_met1_ext_ref, (i)*separation)
-        
-        bot_met1_ext = rectangle(size=(met1_via_ext, met1_via_ext), layer=pdk.get_glayer("met1"), centered=True)
-        bot_met1_ext_ref = prec_ref_center(bot_met1_ext)
-        p_res.add(bot_met1_ext_ref)
-        movey(bot_met1_ext_ref, - contact_length/2 - length/2 - sab_contact_spacing)
-        movex(bot_met1_ext_ref, (i)*separation)
-
-        # Add met2 layer for top-level routing
-        met2_size = via_size + 2 * via_overlap
-        met2_top = rectangle(size=(met2_size, met2_size), layer=pdk.get_glayer("met2"), centered=True)
-        met2_top_ref = prec_ref_center(met2_top)
-        p_res.add(met2_top_ref)
-        movey(met2_top_ref, contact_length/2 + length/2 + sab_contact_spacing)
-        movex(met2_top_ref, (i)*separation)
-
-        met2_bot = rectangle(size=(met2_size, met2_size), layer=pdk.get_glayer("met2"), centered=True)
-        met2_bot_ref = prec_ref_center(met2_bot)
-        p_res.add(met2_bot_ref)
-        movey(met2_bot_ref, - contact_length/2 - length/2 - sab_contact_spacing)
-        movex(met2_bot_ref, (i)*separation)
+        met1con2 = via_array(pdk, "met1", "met2", size=(width,contact_length))
+        met1con2_ref = prec_ref_center(met1con2)
+        p_res.add(met1con2_ref)
+        movey(met1con2_ref, - contact_length/2 - length/2)
+        movex(met1con2_ref, (i)*separation)
 
         con_offset = (separation)/2
         if is_snake == True:
             if i > 0:
-                met2_connect = rectangle(size=(width+separation,contact_length), layer=pdk.get_glayer("met2"),centered= True)
-                met2_con_ref = prec_ref_center(met2_connect)
-                p_res.add(met2_con_ref)
+                met1_connect = rectangle(size=(width+separation,contact_length), layer=pdk.get_glayer("met2"),centered= True)
+                met1_con_ref = prec_ref_center(met1_connect)
+                p_res.add(met1_con_ref)
                 if i%2 == 0:
-                    movey(met2_con_ref, - contact_length/2 - length/2 - sab_contact_spacing)
-                    movex(met2_con_ref, (i-1)*separation+con_offset)
+                    movey(met1_con_ref, - contact_length/2 - length/2)
+                    movex(met1_con_ref, (i-1)*separation+con_offset)
                 else:
-                    movey(met2_con_ref, contact_length/2 + length/2 + sab_contact_spacing)
-                    movex(met2_con_ref, (i-1)*separation+con_offset)
+                    movey(met1_con_ref, contact_length/2 + length/2)
+                    movex(met1_con_ref, (i-1)*separation+con_offset)
 
         if i == 0:
-            p_res.add_ports(met2_bot_ref.get_ports_list(), prefix="MINUS_")
+            p_res.add_ports(met1_bot_ref.get_ports_list(), prefix="MINUS_")
 
 
     tap_separation = max(
@@ -244,64 +174,15 @@ def poly_resistor(
         )
     p_res.add_ports(tiering_ref.get_ports_list(), prefix="tie_")
     
-    # Add SAB layer with proper enclosure (if available in PDK)
-    try:
-        sab_enclosure = pdk.get_grule("sab", "poly")["min_enclosure"]
-        sab_width = width * fingers + 2 * sab_enclosure
-        sab_length = length + 2 * sab_enclosure
-        sab_rect = rectangle(size=(sab_width, sab_length), layer=pdk.get_glayer("sab"), centered=True)
-        sab_ref = prec_ref_center(sab_rect)
-        p_res.add(sab_ref)
-        print("✓ Added SAB layer")
-    except (KeyError, ValueError):
-        print("⚠ SAB layer not available in this PDK, skipping")
+    # add pplus or nplus layer according to the polyresistor type
+    if n_type:
+        plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
+    else:
+        plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
     
-    # Add RES_MK layer with proper coverage (if available in PDK)
-    try:
-        res_mk_enclosure = pdk.get_grule("res_mk", "poly")["min_enclosure"]
-        res_mk_width = width * fingers + 2 * res_mk_enclosure
-        res_mk_length = length + 2 * res_mk_enclosure
-        res_mk_rect = rectangle(size=(res_mk_width, res_mk_length), layer=pdk.get_glayer("res_mk"), centered=True)
-        res_mk_ref = prec_ref_center(res_mk_rect)
-        p_res.add(res_mk_ref)
-        print("✓ Added RES_MK layer")
-    except (KeyError, ValueError):
-        print("⚠ RES_MK layer not available in this PDK, skipping")
-
-    # add pplus or nplus layer according to the polyresistor type (if available in PDK)
-    try:
-        if n_type:
-            plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
-            # Check if rules exist between n+s/d and poly
-            try:
-                n_poly_rules = pdk.get_grule("n+s/d", "poly")
-                if n_poly_rules and "min_enclosure" in n_poly_rules:
-                    plus_enclosure = n_poly_rules["min_enclosure"]
-                else:
-                    plus_enclosure = 0.15  # Default enclosure when no rules defined
-            except (KeyError, NotImplementedError):
-                plus_enclosure = 0.15  # Default enclosure
-        else:
-            plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
-            # Check if rules exist between p+s/d and poly
-            try:
-                p_poly_rules = pdk.get_grule("p+s/d", "poly")
-                if p_poly_rules and "min_enclosure" in p_poly_rules:
-                    plus_enclosure = p_poly_rules["min_enclosure"]
-                else:
-                    plus_enclosure = 0.15  # Default enclosure when no rules defined
-            except (KeyError, NotImplementedError):
-                plus_enclosure = 0.15  # Default enclosure
-        
-        # P+/N+ implant with proper enclosure
-        plus_width = width * fingers + 2 * plus_enclosure
-        plus_length = length + 2 * plus_enclosure
-        plus = rectangle(size=(plus_width, plus_length), layer=plus_layer, centered=True)
-        plus_ref = prec_ref_center(plus)
-        p_res.add(plus_ref)
-        print(f"✓ Added {'N+' if n_type else 'P+'}+ layer with {plus_enclosure}μm enclosure")
-    except (KeyError, ValueError):
-        print(f"⚠ {'N+' if n_type else 'P+'}+ layer not available in this PDK, skipping")
+    plus = rectangle(size=(2*p_res.xmax+2,2*p_res.ymax+2), layer=plus_layer, centered=True)
+    plus_ref = prec_ref_center(plus)
+    p_res.add(plus_ref)
     # add pwell
     #p_res.add_padding(
     #    layers=(pdk.get_glayer("pwell"),),
@@ -311,9 +192,9 @@ def poly_resistor(
 
     #print(i)
     if i%2 == 0:
-        p_res.add_ports(met2_top_ref.get_ports_list(), prefix="PLUS_")
+        p_res.add_ports(met1_top_ref.get_ports_list(), prefix="PLUS_")
     else:
-        p_res.add_ports(met2_bot_ref.get_ports_list(), prefix="PLUS_")
+        p_res.add_ports(met1_bot_ref.get_ports_list(), prefix="PLUS_")
 
     # Select model based on type and silicidation
     if n_type:
@@ -374,40 +255,20 @@ def add_polyres_labels(pdk: MappedPDK, p_res: Component, length, width, fingers)
     return p_res.flatten()
 
 
-# Test different configurations - commented out to avoid execution during import
-# Uncomment the following lines to run tests manually:
-if __name__ == "__main__":
-    print("Testing P-type, unsilicided polyresistor...")
-    resistor = add_polyres_labels(gf180_mapped_pdk, poly_resistor(gf180_mapped_pdk, width=0.8, fingers=1, is_snake=True, n_type=False, silicided=False), 1.65, 0.8, 1) 
-    resistor.show()
-    resistor.name = "POLY_RES_P_UNSAL"
-    # Test DRC using Magic (if available)
-    print(f"\n🔍 Running DRC check using Magic...")
-    try:
-        magic_drc_result = gf180_mapped_pdk.drc_magic(resistor, resistor.name)
-        print(f"✅ Magic DRC completed successfully!")
-        print(f"DRC result: {magic_drc_result}")
-    except Exception as e:
-        print(f"⚠ Magic DRC not available: {e}")
-        print("This is normal in some Docker environments.")
-        print("The GDS file has been generated successfully and can be checked with other DRC tools.")
-    
-    # Test LVS using Netgen (if available)
-    print(f"\n🔍 Running LVS check using Netgen...")
-    try:
-        lvs_result = gf180_mapped_pdk.lvs_netgen(resistor,resistor.name,copy_intermediate_files=True)
-        print(f"✅ LVS completed successfully!")
-        print(f"LVS result: {lvs_result}")
-    except Exception as e:
-        print(f"⚠ LVS not available: {e}")
-        print("This is normal in some Docker environments.")
-    print("P-type, unsilicided netlist:")
-    print(resistor.info['netlist'].generate_netlist())
-    
-    # Test N-type, silicided
-    print("\nTesting N-type, silicided polyresistor...")
-    resistor_n_sal = add_polyres_labels(gf180_mapped_pdk, poly_resistor(gf180_mapped_pdk, width=0.8, fingers=1, is_snake=True, n_type=True, silicided=True), 1.65, 0.8, 1)
-    resistor_n_sal.show()
-    resistor_n_sal.name = "POLY_RES_N_SAL"
-    print("N-type, silicided netlist:")
-    print(resistor_n_sal.info['netlist'].generate_netlist())
+# Test different configurations
+print("Testing P-type, unsilicided polyresistor...")
+resistor = add_polyres_labels(gf180_mapped_pdk, poly_resistor(gf180_mapped_pdk, width=0.8, fingers=1, is_snake=True, n_type=False, silicided=False), 1.65, 0.8, 1) 
+resistor.show()
+resistor.name = "POLY_RES_P_UNSAL"
+magic_drc_result = gf180_mapped_pdk.drc_magic(resistor, resistor.name)
+lvs_result = gf180_mapped_pdk.lvs_netgen(resistor,resistor.name,copy_intermediate_files=True)
+print("P-type, unsilicided netlist:")
+print(resistor.info['netlist'].generate_netlist())
+
+# Test N-type, silicided
+print("\nTesting N-type, silicided polyresistor...")
+resistor_n_sal = add_polyres_labels(gf180_mapped_pdk, poly_resistor(gf180_mapped_pdk, width=0.8, fingers=1, is_snake=True, n_type=True, silicided=True), 1.65, 0.8, 1)
+resistor_n_sal.show()
+resistor_n_sal.name = "POLY_RES_N_SAL"
+print("N-type, silicided netlist:")
+print(resistor_n_sal.info['netlist'].generate_netlist())
