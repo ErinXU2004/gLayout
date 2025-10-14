@@ -64,7 +64,9 @@ def poly_resistor(
     res_mk = (110,5)
     p_res = Component()
     contact_length = 2.2
-    separation = 0.21 + width
+    # Add DRC-compliant spacing: poly to active_diff minimum separation is 0.6μm
+    min_poly_active_sep = pdk.get_grule("poly", "active_diff")["min_separation"]  # 0.6μm
+    separation = max(0.21 + width, min_poly_active_sep + width)
     #Extend poly for contacts
     ex_length = length + 2*contact_length
     for i in range(0,fingers):
@@ -215,6 +217,14 @@ def poly_resistor(
         length=length,
         multipliers=1,
     )
+    
+    # Add padding to ensure DRC compliance with active_diff spacing
+    min_poly_active_sep = pdk.get_grule("poly", "active_diff")["min_separation"]
+    p_res.add_padding(
+        layers=(pdk.get_glayer("active_diff"),),
+        default=min_poly_active_sep
+    )
+    
     #print(p_res.get_ports_list())
     return p_res
 
