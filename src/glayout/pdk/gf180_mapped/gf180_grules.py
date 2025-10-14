@@ -366,3 +366,16 @@ grulesobj["capmet"]["via4"] = {}
 grulesobj["capmet"]["met5"] = {}
 grulesobj["capmet"]["capmet"] = {'capmettop': (42, 0), 'capmetbottom': (36, 0), 'min_separation': 1.2}
 
+
+# Polyresistor specific rules
+grulesobj["sab"]["poly"] = {"min_enclosure": 0.28}
+grulesobj["sab"]["mcon"] = {"min_separation": 0.22}
+grulesobj["res_mk"]["poly"] = {"min_enclosure": 0.4, "min_separation": 0.3}
+grulesobj["res_mk"]["res_mk"] = {"min_separation": 20.0}
+grulesobj["res_mk"]["active_diff"] = {"min_separation": 0.3}
+
+# Update existing rules for polyresistor compatibility
+grulesobj["p+s/d"]["poly"] = {"min_enclosure": 0.3}
+grulesobj["p+s/d"]["mcon"] = {"min_enclosure": 0.2}
+grulesobj["poly"]["active_diff"] = {"min_separation": 0.6}
+grulesobj["poly"]["poly"] = {"min_width": 1, "min_separation": 0.4}
