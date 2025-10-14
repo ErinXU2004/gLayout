@@ -99,18 +99,19 @@ def poly_resistor(
         p_res.add(resmk_ref)
 
         #Place poly to li via contact
-        licon1 = via_array(pdk, "poly", "met1", size=(width,contact_length))
+        # Use no_exception=True to allow smaller via arrays
+        licon1 = via_array(pdk, "poly", "met1", size=(width,contact_length), no_exception=True)
         licon1_ref = prec_ref_center(licon1)
         #p_res.add(licon1_ref)
         #movey(licon1_ref, contact_length/2 + length/2)
 
-        licon2 = via_array(pdk, "poly", "met1", size=(width,contact_length))
+        licon2 = via_array(pdk, "poly", "met1", size=(width,contact_length), no_exception=True)
         licon2_ref = prec_ref_center(licon2)
         p_res.add(licon2_ref)
         movey(licon2_ref, - contact_length/2 - length/2)
         movex(licon2_ref, (i)*separation)
 
-        licon3 = via_array(pdk, "poly", "met1", size=(width,contact_length))
+        licon3 = via_array(pdk, "poly", "met1", size=(width,contact_length), no_exception=True)
         licon3_ref = prec_ref_center(licon3)
         p_res.add(licon3_ref)
         movey(licon3_ref, contact_length/2 + length/2)
@@ -129,13 +130,13 @@ def poly_resistor(
         movey(met1_bot_ref, - contact_length/2 - length/2)
         movex(met1_bot_ref, (i)*separation)
         #place li to metal vias
-        met1con1 = via_array(pdk, "met1", "met2", size=(width,contact_length))
+        met1con1 = via_array(pdk, "met1", "met2", size=(width,contact_length), no_exception=True)
         met1con1_ref = prec_ref_center(met1con1)
         p_res.add(met1con1_ref)
         movey(met1con1_ref, contact_length/2 + length/2)
         movex(met1con1_ref, (i)*separation)
 
-        met1con2 = via_array(pdk, "met1", "met2", size=(width,contact_length))
+        met1con2 = via_array(pdk, "met1", "met2", size=(width,contact_length), no_exception=True)
         met1con2_ref = prec_ref_center(met1con2)
         p_res.add(met1con2_ref)
         movey(met1con2_ref, - contact_length/2 - length/2)
