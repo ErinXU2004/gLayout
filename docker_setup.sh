@@ -22,8 +22,12 @@ echo "=== Fixing compatibility issues ==="
 if [[ "$python_version" == "3.9" ]] || [[ "$python_version" == "3.8" ]]; then
     echo "Installing compatible gdsfactory version for Python $python_version..."
     pip install "gdsfactory==6.116.0"
+elif [[ "$gdsfactory_version" == *"7."* ]] || [[ "$gdsfactory_version" == *"8."* ]]; then
+    echo "Downgrading gdsfactory from $gdsfactory_version to avoid Pydantic V2 issues..."
+    pip install "gdsfactory<7.0" --force-reinstall
+    echo "✓ gdsfactory downgraded"
 else
-    echo "Python version $python_version should work with latest gdsfactory"
+    echo "Python version $python_version should work with current gdsfactory"
 fi
 
 # Fix Pydantic version if needed

@@ -275,6 +275,16 @@ if __name__ == "__main__":
         f.write(spice_content)
     print(f"✓ SPICE netlist saved: {component_name}.spice")
     
+    # Save with klayout's expected generic name (often looks for this)
+    with open("Unnamed.spice", "w") as f:
+        f.write(spice_content)
+    print("✓ SPICE netlist saved: Unnamed.spice")
+    
+    # Also save as netlist.spice (another common klayout expectation)
+    with open("netlist.spice", "w") as f:
+        f.write(spice_content)
+    print("✓ SPICE netlist saved: netlist.spice")
+    
     # Print netlist
     print("P-type, unsilicided netlist:")
     print(spice_content)
@@ -302,6 +312,16 @@ if __name__ == "__main__":
     with open(f"{component_name_n}.spice", "w") as f:
         f.write(spice_content_n)
     print(f"✓ SPICE netlist saved: {component_name_n}.spice")
+    
+    # Save with klayout's expected generic name for N-type
+    with open("Unnamed_n.spice", "w") as f:
+        f.write(spice_content_n)
+    print("✓ SPICE netlist saved: Unnamed_n.spice")
+    
+    # Also save as netlist_n.spice
+    with open("netlist_n.spice", "w") as f:
+        f.write(spice_content_n)
+    print("✓ SPICE netlist saved: netlist_n.spice")
     
     print("N-type, silicided netlist:")
     print(spice_content_n)
