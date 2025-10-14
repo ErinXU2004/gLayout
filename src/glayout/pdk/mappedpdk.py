@@ -260,6 +260,8 @@ class MappedPDK(Pdk):
         "via4",
         "met5",
         "capmet",
+        "sab",
+        "res_mk",
         # _pin layers
         "met5_pin",
         "met4_pin",
@@ -296,8 +298,8 @@ class MappedPDK(Pdk):
     @validator("models")
     def models_check(cls, models_obj: dict[StrictStr, StrictStr]):
         for model in models_obj.keys():
-            if not model in ["nfet","pfet","mimcap"]:
-                raise ValueError(f"specify nfet, pfet, or mimcap models only")
+            if not model in ["nfet","pfet","mimcap","ppolyf_s","ppolyf_u","npolyf_s","npolyf_u","ppolyf_u_1k"]:
+                raise ValueError(f"specify nfet, pfet, mimcap, or polyresistor models only")
         return models_obj
 
     @validator("glayers")
