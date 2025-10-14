@@ -11,7 +11,7 @@ from glayout.util.port_utils import add_ports_perimeter
 from glayout.pdk.sky130_mapped import sky130_mapped_pdk
 from glayout.pdk.gf180_mapped import gf180_mapped_pdk
 from glayout.spice import Netlist
-from glayout.primitives.guardring import tapring
+# from glayout.primitives.guardring import tapring  # Not needed for polyresistor
 
 def poly_resistor_netlist(
     circuit_name: str,
@@ -54,19 +54,17 @@ def poly_resistor(
     length: float = 1.65,
     width: float = 0.35,
     fingers: int = 1,
-    tie_layers: tuple[str,str] = ("met2","met2"),
     is_snake: bool = True,
     n_type: bool = False,
     silicided: bool = False
 ) -> Component:
     #poly_res = (66, 13)
-    sab = (49,0)
     res_mk = (110,5)
     p_res = Component()
     contact_length = 2.2
-    # Add DRC-compliant spacing: poly to active_diff minimum separation is 0.6μm
-    min_poly_active_sep = pdk.get_grule("poly", "active_diff")["min_separation"]  # 0.6μm
-    separation = max(0.21 + width, min_poly_active_sep + width)
+    # Add DRC-compliant spacing: poly to poly minimum separation is 0.4μm
+    min_poly_sep = pdk.get_grule("poly", "poly")["min_separation"]  # 0.4μm
+    separation = max(0.21 + width, min_poly_sep + width)
     #Extend poly for contacts
     ex_length = length + 2*contact_length
     for i in range(0,fingers):
@@ -88,10 +86,9 @@ def poly_resistor(
         movey(li_bot_ref, - contact_length/2 - length/2)
         movex(li_bot_ref, (i)*separation)
 
-        ##Add unsalicide layer, if not silicided, use this block, otherwise skip
-        unsal = rectangle(size=((width*fingers+0.56),(length)), layer=sab, centered=True)
-        unsal_ref = prec_ref_center(unsal)
-        p_res.add(unsal_ref)
+        ##SAB layer removed to comply with SB.16 rule
+        ##SAB layer cannot exist on 3.3V/5V CMOS transistors in core circuit
+        ##Only allowed on transistors marked by LVS_IO, OTP_MK, ESD_MK layers
 
         ##Add RES_MK layer
         resmk = rectangle(size=((width*fingers+0.56),(length)), layer=res_mk, centered=True)
@@ -159,30 +156,10 @@ def poly_resistor(
             p_res.add_ports(met1_bot_ref.get_ports_list(), prefix="MINUS_")
 
 
-    tap_separation = max(
-            pdk.util_max_metal_seperation(),
-            pdk.get_grule("active_diff", "active_tap")["min_separation"],
-        )
-    tap_separation += pdk.get_grule("p+s/d", "active_tap")["min_enclosure"]
-    tap_encloses = (
-            2 * (tap_separation + p_res.xmax),
-            2 * (tap_separation + p_res.ymax),
-        )
-    tiering_ref = p_res << tapring(
-            pdk,
-            enclosed_rectangle=tap_encloses,
-            sdlayer="p+s/d",
-            horizontal_glayer=tie_layers[0],
-            vertical_glayer=tie_layers[1],
-        )
-    p_res.add_ports(tiering_ref.get_ports_list(), prefix="tie_")
-    
-    # add pplus or nplus layer according to the polyresistor type
-    if n_type:
-        plus_layer = pdk.get_glayer("n+s/d")  # N-plus for N-type polyresistor
-    else:
-        plus_layer = pdk.get_glayer("p+s/d")  # P-plus for P-type polyresistor
-    
+    # Add P-plus layer for polyresistor (required by GF180MCU DRC rules)
+    # Note: SAB layer removed to comply with SB.16 rule
+    # SAB layer cannot exist on 3.3V/5V CMOS transistors in core circuit
+    plus_layer = pdk.get_glayer("p+s/d")  # Always use P-plus for polyresistor
     plus = rectangle(size=(2*p_res.xmax+2,2*p_res.ymax+2), layer=plus_layer, centered=True)
     plus_ref = prec_ref_center(plus)
     p_res.add(plus_ref)
@@ -193,11 +170,12 @@ def poly_resistor(
     #)
     #p_res = add_ports_perimeter(p_res,layer=pdk.get_glayer("pwell"),prefix="well_")
 
-    #print(i)
-    if i%2 == 0:
-        p_res.add_ports(met1_top_ref.get_ports_list(), prefix="PLUS_")
-    else:
-        p_res.add_ports(met1_bot_ref.get_ports_list(), prefix="PLUS_")
+    # Add PLUS port from the last finger
+    if fingers > 0:
+        if (fingers-1)%2 == 0:
+            p_res.add_ports(met1_top_ref.get_ports_list(), prefix="PLUS_")
+        else:
+            p_res.add_ports(met1_bot_ref.get_ports_list(), prefix="PLUS_")
 
     # Select model based on type and silicidation
     if n_type:
@@ -219,11 +197,11 @@ def poly_resistor(
         multipliers=1,
     )
     
-    # Add padding to ensure DRC compliance with active_diff spacing
-    min_poly_active_sep = pdk.get_grule("poly", "active_diff")["min_separation"]
+    # Add padding to ensure DRC compliance with poly spacing
+    min_poly_sep = pdk.get_grule("poly", "poly")["min_separation"]
     p_res.add_padding(
-        layers=(pdk.get_glayer("active_diff"),),
-        default=min_poly_active_sep
+        layers=(pdk.get_glayer("poly"),),
+        default=min_poly_sep
     )
     
     #print(p_res.get_ports_list())
@@ -256,9 +234,13 @@ def add_polyres_labels(pdk: MappedPDK, p_res: Component, length, width, fingers)
     m_label.add_label(text="MINUS",layer=pdk.get_glayer("met2_label"))
     move_info.append((m_label,m_pin.ports["e1"],None))
 
+    # Create a simple substrate connection point (no tapring needed for polyresistor)
+    sub_pin = p_res << rectangle(size=(0.1,0.1),layer=pdk.get_glayer("met2"),centered=True)
+    movey(sub_pin, contact_length/2 + length/2 + 1.0)  # Place above the resistor
+    
     sub_label = rectangle(layer=pdk.get_glayer("met2_pin"),size=(0.5,0.5),centered=True).copy()
     sub_label.add_label(text="VSUBS",layer=pdk.get_glayer("met2_label"))
-    move_info.append((sub_label,p_res.ports["tie_N_top_met_N"], None))
+    move_info.append((sub_label,sub_pin.ports["e1"], None))
     for comp, prt, alignment in move_info:
         alignment = ('c','b') if alignment is None else alignment
         compref = align_comp_to_port(comp, prt, alignment=alignment)
