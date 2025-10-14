@@ -366,13 +366,49 @@ grulesobj["capmet"]["via4"] = {}
 grulesobj["capmet"]["met5"] = {}
 grulesobj["capmet"]["capmet"] = {'capmettop': (42, 0), 'capmetbottom': (36, 0), 'min_separation': 1.2}
 
-
-# Polyresistor specific rules
+# Initialize sab and res_mk grules
+grulesobj["sab"]["sab"] = {'min_width': 0.28, 'min_separation': 0.28}
+grulesobj["sab"]["dnwell"] = {}
+grulesobj["sab"]["pwell"] = {}
+grulesobj["sab"]["nwell"] = {}
+grulesobj["sab"]["p+s/d"] = {}
+grulesobj["sab"]["n+s/d"] = {}
+grulesobj["sab"]["active_diff"] = {}
+grulesobj["sab"]["active_tap"] = {}
 grulesobj["sab"]["poly"] = {"min_enclosure": 0.28}
 grulesobj["sab"]["mcon"] = {"min_separation": 0.22}
-grulesobj["res_mk"]["poly"] = {"min_enclosure": 0.4, "min_separation": 0.3}
-grulesobj["res_mk"]["res_mk"] = {"min_separation": 20.0}
+grulesobj["sab"]["met1"] = {}
+grulesobj["sab"]["via1"] = {}
+grulesobj["sab"]["met2"] = {}
+grulesobj["sab"]["via2"] = {}
+grulesobj["sab"]["met3"] = {}
+grulesobj["sab"]["via3"] = {}
+grulesobj["sab"]["met4"] = {}
+grulesobj["sab"]["via4"] = {}
+grulesobj["sab"]["met5"] = {}
+grulesobj["sab"]["capmet"] = {}
+
+grulesobj["res_mk"]["res_mk"] = {"min_width": 0.4, "min_separation": 20.0}
+grulesobj["res_mk"]["dnwell"] = {}
+grulesobj["res_mk"]["pwell"] = {}
+grulesobj["res_mk"]["nwell"] = {}
+grulesobj["res_mk"]["p+s/d"] = {}
+grulesobj["res_mk"]["n+s/d"] = {}
 grulesobj["res_mk"]["active_diff"] = {"min_separation": 0.3}
+grulesobj["res_mk"]["active_tap"] = {}
+grulesobj["res_mk"]["poly"] = {"min_enclosure": 0.4, "min_separation": 0.3}
+grulesobj["res_mk"]["mcon"] = {}
+grulesobj["res_mk"]["met1"] = {}
+grulesobj["res_mk"]["via1"] = {}
+grulesobj["res_mk"]["met2"] = {}
+grulesobj["res_mk"]["via2"] = {}
+grulesobj["res_mk"]["met3"] = {}
+grulesobj["res_mk"]["via3"] = {}
+grulesobj["res_mk"]["met4"] = {}
+grulesobj["res_mk"]["via4"] = {}
+grulesobj["res_mk"]["met5"] = {}
+grulesobj["res_mk"]["capmet"] = {}
+grulesobj["res_mk"]["sab"] = {}
 
 # Update existing rules for polyresistor compatibility
 grulesobj["p+s/d"]["poly"] = {"min_enclosure": 0.3}
