@@ -1,8 +1,10 @@
 from ..mappedpdk import MappedPDK
 
 grulesobj = dict()
-for glayer in MappedPDK.valid_glayers:
-    grulesobj[glayer] = dict((x, None) for x in MappedPDK.valid_glayers)
+# Add sab and res_mk to valid_glayers for polyresistor support
+extended_glayers = list(MappedPDK.valid_glayers) + ["sab", "res_mk"]
+for glayer in extended_glayers:
+    grulesobj[glayer] = dict((x, None) for x in extended_glayers)
 
 grulesobj["dnwell"]["dnwell"] = {'min_width': 1.7, 'min_separation': 5.42}
 grulesobj["dnwell"]["pwell"] = {'min_enclosure': 2.5}
