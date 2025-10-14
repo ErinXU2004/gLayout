@@ -261,11 +261,19 @@ if __name__ == "__main__":
     resistor.write_gds("polyres_test.gds")
     print("✓ GDS file saved: polyres_test.gds")
     
-    # Generate SPICE netlist file for LVS
+    # Generate SPICE netlist file for LVS (multiple formats)
     spice_content = resistor.info['netlist'].generate_netlist()
+    
+    # Save in different formats for LVS compatibility
     with open("polyres_test.spice", "w") as f:
         f.write(spice_content)
     print("✓ SPICE netlist saved: polyres_test.spice")
+    
+    # Also save with component name for klayout LVS
+    component_name = resistor.name
+    with open(f"{component_name}.spice", "w") as f:
+        f.write(spice_content)
+    print(f"✓ SPICE netlist saved: {component_name}.spice")
     
     # Print netlist
     print("P-type, unsilicided netlist:")
@@ -281,11 +289,19 @@ if __name__ == "__main__":
     resistor_n_sal.write_gds("polyres_n_sal_test.gds")
     print("✓ GDS file saved: polyres_n_sal_test.gds")
     
-    # Generate SPICE netlist file for LVS
+    # Generate SPICE netlist file for LVS (multiple formats)
     spice_content_n = resistor_n_sal.info['netlist'].generate_netlist()
+    
+    # Save in different formats for LVS compatibility
     with open("polyres_n_sal_test.spice", "w") as f:
         f.write(spice_content_n)
     print("✓ SPICE netlist saved: polyres_n_sal_test.spice")
+    
+    # Also save with component name for klayout LVS
+    component_name_n = resistor_n_sal.name
+    with open(f"{component_name_n}.spice", "w") as f:
+        f.write(spice_content_n)
+    print(f"✓ SPICE netlist saved: {component_name_n}.spice")
     
     print("N-type, silicided netlist:")
     print(spice_content_n)
