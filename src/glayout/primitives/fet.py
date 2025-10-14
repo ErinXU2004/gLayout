@@ -186,7 +186,7 @@ def multiplier(
     min_width = max(min_length, pdk.get_grule("active_diff")["min_width"])
     width = min_width if (width or min_width) <= min_width else width
     width = pdk.snap_to_2xgrid(width)
-    poly_height = width + 2 * pdk.get_grule("poly", "active_diff")["overhang"]
+    poly_height = width + 2 * pdk.get_grule("active_diff", "poly").get("overhang", 0.24)
     # call finger array
     multiplier = __gen_fingers_macro(pdk, interfinger_rmult, fingers, length, width, poly_height, sdlayer, inter_finger_topmet)
     # route all drains/ gates/ sources
