@@ -6,7 +6,7 @@ from glayout.pdk.mappedpdk import MappedPDK
 from typing import Optional, Union
 from glayout.primitives.via_gen import via_array, via_stack
 from glayout.primitives.guardring import tapring
-from pydantic import validate_arguments
+from pydantic import validate_call
 from glayout.util.comp_utils import evaluate_bbox, to_float, to_decimal, prec_array, prec_center, prec_ref_center, movey, align_comp_to_port
 from glayout.util.port_utils import rename_ports_by_orientation, rename_ports_by_list, add_ports_perimeter, print_ports
 from glayout.routing.c_route import c_route
@@ -17,7 +17,7 @@ from glayout.routing.straight_route import straight_route
 from glayout.spice import Netlist
 
 
-@validate_arguments
+@validate_call
 def __gen_fingers_macro(pdk: MappedPDK, rmult: int, fingers: int, length: float, width: float, poly_height: float, sdlayer: str, inter_finger_topmet: str) -> Component:
     """internal use: returns an array of fingers"""
     length = pdk.snap_to_2xgrid(length)
@@ -255,7 +255,7 @@ def multiplier(
     return component_snap_to_grid(rename_ports_by_orientation(multiplier))
 
 
-@validate_arguments
+@validate_call
 def __mult_array_macro(
     pdk: MappedPDK,
     sdlayer: str,
