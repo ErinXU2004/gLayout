@@ -63,7 +63,8 @@ def poly_resistor(
     p_res = Component()
     contact_length = 2.2
     # Add DRC-compliant spacing: poly to poly minimum separation is 0.4μm
-    min_poly_sep = pdk.get_grule("poly", "poly")["min_separation"]  # 0.4μm
+    poly_poly_rules = pdk.get_grule("poly", "poly")
+    min_poly_sep = poly_poly_rules.get("min_separation", 0.4)  # Default to 0.4μm if not found
     separation = max(0.21 + width, min_poly_sep + width)
     #Extend poly for contacts
     ex_length = length + 2*contact_length
@@ -198,7 +199,8 @@ def poly_resistor(
     )
     
     # Add padding to ensure DRC compliance with poly spacing
-    min_poly_sep = pdk.get_grule("poly", "poly")["min_separation"]
+    poly_poly_rules = pdk.get_grule("poly", "poly")
+    min_poly_sep = poly_poly_rules.get("min_separation", 0.4)  # Default to 0.4μm if not found
     p_res.add_padding(
         layers=(pdk.get_glayer("poly"),),
         default=min_poly_sep
