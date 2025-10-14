@@ -261,9 +261,15 @@ if __name__ == "__main__":
     resistor.write_gds("polyres_test.gds")
     print("✓ GDS file saved: polyres_test.gds")
     
+    # Generate SPICE netlist file for LVS
+    spice_content = resistor.info['netlist'].generate_netlist()
+    with open("polyres_test.spice", "w") as f:
+        f.write(spice_content)
+    print("✓ SPICE netlist saved: polyres_test.spice")
+    
     # Print netlist
     print("P-type, unsilicided netlist:")
-    print(resistor.info['netlist'].generate_netlist())
+    print(spice_content)
 
     # Test N-type, silicided
     print("\nTesting N-type, silicided polyresistor...")
@@ -275,5 +281,11 @@ if __name__ == "__main__":
     resistor_n_sal.write_gds("polyres_n_sal_test.gds")
     print("✓ GDS file saved: polyres_n_sal_test.gds")
     
+    # Generate SPICE netlist file for LVS
+    spice_content_n = resistor_n_sal.info['netlist'].generate_netlist()
+    with open("polyres_n_sal_test.spice", "w") as f:
+        f.write(spice_content_n)
+    print("✓ SPICE netlist saved: polyres_n_sal_test.spice")
+    
     print("N-type, silicided netlist:")
-    print(resistor_n_sal.info['netlist'].generate_netlist())
+    print(spice_content_n)

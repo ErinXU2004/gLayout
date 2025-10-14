@@ -6,7 +6,10 @@ from typing import Optional
 from glayout.primitives.via_gen import via_array
 from glayout.util.comp_utils import prec_array, to_decimal, to_float
 from glayout.util.port_utils import rename_ports_by_orientation, add_ports_perimeter, print_ports
-from pydantic import validate_call
+try:
+    from pydantic import validate_call
+except ImportError:
+    from pydantic import validate_arguments as validate_call
 from glayout.routing.straight_route import straight_route
 from decimal import ROUND_UP, Decimal
 from glayout.spice import Netlist

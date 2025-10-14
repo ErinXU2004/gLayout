@@ -1,7 +1,10 @@
 from gdsfactory.cell import cell
 from gdsfactory.component import Component
 from gdsfactory.components.rectangle import rectangle
-from pydantic import validate_call
+try:
+    from pydantic import validate_call
+except ImportError:
+    from pydantic import validate_arguments as validate_call
 from glayout.pdk.mappedpdk import MappedPDK
 from math import floor
 from typing import Optional, Union

@@ -6,7 +6,10 @@ from glayout.pdk.mappedpdk import MappedPDK
 from typing import Optional, Union
 from glayout.primitives.via_gen import via_array, via_stack
 from glayout.primitives.guardring import tapring
-from pydantic import validate_call
+try:
+    from pydantic import validate_call
+except ImportError:
+    from pydantic import validate_arguments as validate_call
 from glayout.util.comp_utils import evaluate_bbox, to_float, to_decimal, prec_array, prec_center, prec_ref_center, movey, align_comp_to_port
 from glayout.util.port_utils import rename_ports_by_orientation, rename_ports_by_list, add_ports_perimeter, print_ports
 from glayout.routing.c_route import c_route
